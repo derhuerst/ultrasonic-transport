@@ -1,0 +1,28 @@
+{
+	"name": "ultrasonic-transport",
+	"description": "Generic ultrasonic transport layer on top of Web Audio.",
+	"version": "0.1.0",
+	"main": "index.js",
+	"files": [
+		"index.js"
+	],
+	"keywords": [
+		"ultrasonic",
+		"sound",
+		"ultrasound",
+		"microphone",
+		"web audio",
+		"transport",
+		"data"
+	],
+	"author": "Jannis R <mail@jannisr.de>",
+	"homepage": "https://github.com/derhuerst/ultrasonic-transport",
+	"repository": "derhuerst/ultrasonic-transport",
+	"bugs": "https://github.com/derhuerst/ultrasonic-transport/issues",
+	"license": "ISC",
+	"engines": {
+		"node": ">=6"
+	},
+	"dependencies": {
+	}
+}
