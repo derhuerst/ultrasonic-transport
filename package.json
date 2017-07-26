@@ -25,6 +25,7 @@
 		"node": ">=6"
 	},
 	"dependencies": {
+		"audio-buffer": "^4.0.2",
 		"audio-oscillator": "^2.0.0",
 		"audio-speaker": "^1.5.0",
 		"readable-stream": "^2.3.3"
