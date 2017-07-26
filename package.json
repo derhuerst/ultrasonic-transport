@@ -4,7 +4,8 @@
 	"version": "0.1.0",
 	"main": "index.js",
 	"files": [
-		"index.js"
+		"index.js",
+		"lib"
 	],
 	"keywords": [
 		"ultrasonic",
@@ -24,5 +25,8 @@
 		"node": ">=6"
 	},
 	"dependencies": {
+		"audio-oscillator": "^2.0.0",
+		"audio-speaker": "^1.5.0",
+		"readable-stream": "^2.3.3"
 	}
 }
