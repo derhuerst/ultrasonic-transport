@@ -1,0 +1,32 @@
+{
+	"private": true,
+	"name": "ultrasonic-transport",
+	"description": "Send data via inaudible sounds.",
+	"version": "1.0.0",
+	"main": "index.js",
+	"files": [
+		"index.js",
+		"example.js"
+	],
+	"keywords": [
+		"todo"
+	],
+	"author": "Jannis R <mail@jannisr.de>",
+	"homepage": "https://github.com/derhuerst/ultrasonic-transport",
+	"repository": "derhuerst/ultrasonic-transport",
+	"bugs": "https://github.com/derhuerst/ultrasonic-transport/issues",
+	"license": "ISC",
+	"engines": {
+		"node": ">=10"
+	},
+	"dependencies": {
+	},
+	"devDependencies": {
+		"tap-min": "^2.0.0",
+		"tape": "^4.10.1"
+	},
+	"scripts": {
+		"test": "env NODE_ENV=dev node test.js | tap-min",
+		"prepublishOnly": "npm test"
+	}
+}
