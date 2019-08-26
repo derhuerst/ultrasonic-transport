@@ -2,35 +2,45 @@
 
 const AudioBuffer = require('audio-buffer')
 const {read: readUInt4, write: writeUInt4} = require('uint4')
+const {Transform} = require('stream')
 const oscillate = require('audio-oscillator/sin')
-const transform = require('through2')
 const Float32Array = require('core-js/stable/typed-array/float32-array')
 const concat = require('concat-typed-array')
 const ft = require('fourier-transform')
 const maxBy = require('lodash/maxBy')
-const {Transform} = require('stream')
+const {profile, fadeInFadeOut} = require('./lib')
 
-const SAMPLE_RATE = 44100
-// ~1 second
-const FRAME_LENGTH = Math.pow(2, Math.round(Math.log2(SAMPLE_RATE / 4)))
-const FT_SIZE = FRAME_LENGTH / 4 // todo: is this correct?
+const {
+	sampleRate: SAMPLE_RATE, // Hz
+	minFreq: MIN_FREQ,
+	maxFreq: MAX_FREQ,
+	freqInterval: FREQ_INTERVAL, // Hz
+	ftSize: FT_SIZE
+} = profile({minFreq: 100, maxFreq: 1600, freqInterval: 100})
+const FRAME_LENGTH = FT_SIZE * 2 // todo?
 
-function encode (buf, _, cb) {
-	// todo: optimize
-	for (let i = 0; i < buf.byteLength * 2; i++) {
-		const audioBuf = new AudioBuffer({
-			length: FRAME_LENGTH,
-			sampleRate: SAMPLE_RATE,
-			numberOfChannels: 1
-		})
-		const freq = 100 + 100 * readUInt4(buf, i / 2)
-		oscillate(audioBuf, freq)
-		this.push(audioBuf)
+const encoder = () => {
+	const encode = (buf, _, cb) => {
+		// todo: optimize
+		for (let i = 0; i < buf.byteLength * 2; i++) {
+			const val = readUInt4(buf, i / 2)
+			const freq = 100 + 100 * val
+
+			const audioBuf = new AudioBuffer({
+				length: FRAME_LENGTH,
+				sampleRate: SAMPLE_RATE,
+				numberOfChannels: 1
+			})
+			oscillate(audioBuf, freq)
+			fadeInFadeOut(audioBuf)
+			encoder.push(audioBuf)
+		}
+		cb()
 	}
-	cb()
-}
 
-const encoder = () => transform.obj(encode)
+	const encoder = new Transform({objectMode: true, write: encode})
+	return encoder
+}
 
 const decoder = () => {
 	let inBuf = new Float32Array()
@@ -38,15 +48,13 @@ const decoder = () => {
 	let outBuf = Buffer.alloc(4), outOffset = 0
 	let prevFreq = NaN, sameFreqFor = 0
 
-	const onData = () => {
-		// console.error('onData', inBuf.length)
-		const spectrum = ft(inBuf.slice(0, FT_SIZE))
+	const decode = () => {
+		const spectrum = ft(inBuf.slice(0, FT_SIZE)).map((v, i) => [i, v])
 		inBuf = inBuf.slice(FT_SIZE)
 
-		// console.error(spectrum.map((v, i) => [i, +v.toFixed(3)]).filter(([_, v]) => v>.3))
-		const peak = maxBy(spectrum.map((v, i) => [i, v]), ([_, v]) => v)
-		if (peak[0] === 0) return;
-		const rawFreq = peak[0] * SAMPLE_RATE / FT_SIZE
+		const [peakAt, peak] = maxBy(spectrum, ([_, v]) => v)
+		if (peak < .03) return;
+		const rawFreq = peakAt * SAMPLE_RATE / FT_SIZE
 		const freq = Math.round(rawFreq / 100) * 100
 
 		if (freq === prevFreq) {
@@ -70,13 +78,13 @@ const decoder = () => {
 
 	const write = (audioBuf, _, cb) => {
 		inBuf = concat(Float32Array, inBuf, audioBuf.getChannelData(0))
-		while (inBuf.length >= FT_SIZE) onData()
+		while (inBuf.length >= FT_SIZE) decode()
 		cb()
 	}
 	const flush = (cb) => {
 		if (inBuf.length > 0) {
 			inBuf = concat(Float32Array, inBuf, new Float32Array(FT_SIZE - inBuf.length))
-			onData()
+			decode()
 		}
 		if (outOffset > 0) decoder.push(outBuf.slice(0, outOffset - 1))
 		cb()
